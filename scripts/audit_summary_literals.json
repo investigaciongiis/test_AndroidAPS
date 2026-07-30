@@ -1,0 +1,33 @@
+{
+  "app_metadata": {
+    "Name": "AndroidAPS",
+    "Developer": "AndroidAPS",
+    "Category": "Mobile Health (mHealth) / EMR Client",
+    "Supported platforms": "Android (SDK 19-33+)",
+    "Version": "3.4.2.4",
+    "Last update": "30/07/2026",
+    "Compatible idioms": "English",
+    "Source": "Open source",
+    "License": "MIT",
+    "Main language": "Java + Kotlin + XML"
+  },
+  "actors": {
+    "Auditor": "Juan José López Jiménez",
+    "Requirement Engineering team": [
+      "Carlos M. Mejía-Granda",
+      "José L Fernández-Alemán",
+      "Juan Manuel Carrillo-de-Gea",
+      "Joaquín Nicolás",
+      "Juan José López Jiménez"
+    ],
+    "Engineering Group (EN)": [
+      "Carlos M. Mejía-Granda",
+      "José L Fernández-Alemán",
+      "Juan Manuel Carrillo-de-Gea",
+      "Joaquín Nicolás",
+      "Juan José López Jiménez"
+    ]
+  },
+  "header_text": "AndroidAPS v3.4.2.4",
+  "cover_page_text": "AndroidAPS - v3.4.2.4"
+}
