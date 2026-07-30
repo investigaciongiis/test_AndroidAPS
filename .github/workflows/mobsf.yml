@@ -269,51 +269,68 @@ jobs:
             mobsf_scan_metadata.json
           if-no-files-found: error
 
-      - name: Try to download MobSF dynamic JSON report if available
-        if: ${{ steps.static_scan.outputs.hash != '' }}
-        continue-on-error: true
-        shell: powershell
-        run: |
-          $baseUrl = ($env:MOBSF_BASE_URL + '').Trim()
-          if ([string]::IsNullOrWhiteSpace($baseUrl)) {
-            $baseUrl = 'http://localhost:8000'
-          }
-          $baseUrl = $baseUrl.TrimEnd('/')
-
-          $apiKey = $env:MOBSF_API_KEY
-          $hash = "${{ steps.static_scan.outputs.hash }}"
-
-          if (-not $hash) {
-            Write-Host 'No hash from static scan; skipping dynamic report fetch.'
-            exit 0
-          }
-
-          Write-Host "Dynamic scan hash: $hash"
-
-          try {
-            Invoke-RestMethod -Uri "$baseUrl/api/v1/dynamic/stop_analysis" `
-              -Method Post -TimeoutSec 3000 `
-              -Headers @{ Authorization = $apiKey } `
-              -Body @{ hash = $hash } | Out-Null
-          } catch {
-            Write-Host "stop_analysis not needed or not available: $($_.Exception.Message)"
-          }
-
-          try {
-            $dyn = Invoke-RestMethod -Uri "$baseUrl/api/v1/dynamic/report_json" `
-              -Method Post -TimeoutSec 3000 `
-              -Headers @{ Authorization = $apiKey } `
-              -Body @{ hash = $hash }
-
-            if ($dyn) {
-              $dyn | ConvertTo-Json -Depth 100 | Set-Content mobsf_dynamic_results.json
-              Write-Host 'Dynamic report saved to mobsf_dynamic_results.json'
-            } else {
-              Write-Host 'Dynamic report not available.'
+        - name: Try to download MobSF dynamic JSON report if available
+          if: ${{ steps.static_scan.outputs.hash != '' }}
+          continue-on-error: true
+          shell: powershell
+          run: |
+            $baseUrl = ($env:MOBSF_BASE_URL + '').Trim()
+            if ([string]::IsNullOrWhiteSpace($baseUrl)) {
+              $baseUrl = 'http://localhost:8000'
             }
-          } catch {
-            Write-Host "Dynamic report fetch failed: $($_.Exception.Message)"
-          }
+
+            $baseUrl = $baseUrl.TrimEnd('/')
+            $apiKey = $env:MOBSF_API_KEY
+            $hash = "${{ steps.static_scan.outputs.hash }}"
+
+            Write-Host "Hash: $hash"
+
+            $timer = [Diagnostics.Stopwatch]::StartNew()
+
+            try {
+              Write-Host "[$(Get-Date -Format o)] Calling stop_analysis..."
+
+              Invoke-RestMethod `
+                -Uri "$baseUrl/api/v1/dynamic/stop_analysis" `
+                -Method Post `
+                -TimeoutSec 300 `
+                -Headers @{ Authorization = $apiKey } `
+                -Body @{ hash = $hash } |
+                Out-Null
+
+              Write-Host "stop_analysis completed in $($timer.Elapsed)"
+            }
+            catch {
+              Write-Host "stop_analysis failed after $($timer.Elapsed)"
+              Write-Host $_.Exception.Message
+            }
+
+            $timer.Restart()
+
+            try {
+              Write-Host "[$(Get-Date -Format o)] Calling report_json..."
+
+              $dyn = Invoke-RestMethod `
+                -Uri "$baseUrl/api/v1/dynamic/report_json" `
+                -Method Post `
+                -TimeoutSec 300 `
+                -Headers @{ Authorization = $apiKey } `
+                -Body @{ hash = $hash }
+
+              Write-Host "report_json completed in $($timer.Elapsed)"
+
+              if ($dyn) {
+                $dyn |
+                  ConvertTo-Json -Depth 100 |
+                  Set-Content mobsf_dynamic_results.json
+
+                Write-Host "Dynamic report saved."
+              }
+            }
+            catch {
+              Write-Host "report_json failed after $($timer.Elapsed)"
+              Write-Host $_.Exception.Message
+            }
 
       - name: Upload MobSF dynamic results if present
         uses: actions/upload-artifact@v6
